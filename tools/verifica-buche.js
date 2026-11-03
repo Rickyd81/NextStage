@@ -1,5 +1,6 @@
 // Controlla che ogni buca si possa chiudere in 2 colpi (e quanto è facile farla in 1).
-// Uso: node tools/verifica-buche.js
+// Uso: node tools/verifica-buche.js            (tutti i percorsi)
+//      node tools/verifica-buche.js spiaggia   (un solo percorso, per id)
 'use strict';
 const P = require('../js/physics.js');
 
@@ -16,26 +17,34 @@ function sweep(c, from, startTick) {
   return out;
 }
 
-P.HOLES.forEach((def, i) => {
-  const c = P.buildCourse(def);
-  const first = sweep(c, c.ball, 0);
-  const ones = first.filter((r) => r.holed).length;
-  // raggruppa le posizioni d'arrivo del primo colpo e prova il secondo da un campione
-  const seen = new Map();
-  for (const r of first) {
-    if (r.holed || r.timeout) continue;
-    const k = Math.round(r.x / 40) + ',' + Math.round(r.y / 40);
-    if (!seen.has(k)) seen.set(k, r);
-  }
-  let twoPaths = 0;
-  let spots = 0;
-  for (const r of seen.values()) {
-    spots++;
-    const second = sweep(c, r, r.tick);
-    if (second.some((s) => s.holed)) twoPaths++;
-  }
-  console.log(
-    `Buca ${i + 1} (${def.name}): hole-in-one ${ones}/${first.length} colpi, ` +
-      `posizioni da cui si chiude al 2° colpo: ${twoPaths}/${spots}`
-  );
-});
+const only = process.argv[2];
+let impossible = 0;
+for (const course of P.COURSES) {
+  if (only && course.id !== only) continue;
+  console.log(`\n== ${course.name} ==`);
+  course.holes.forEach((def, i) => {
+    const c = P.buildCourse(def);
+    const first = sweep(c, c.ball, 0);
+    const ones = first.filter((r) => r.holed).length;
+    // raggruppa le posizioni d'arrivo del primo colpo e prova il secondo da un campione
+    const seen = new Map();
+    for (const r of first) {
+      if (r.holed || r.timeout || r.hazard) continue;
+      const k = Math.round(r.x / 40) + ',' + Math.round(r.y / 40);
+      if (!seen.has(k)) seen.set(k, r);
+    }
+    let twoPaths = 0;
+    for (const r of seen.values()) {
+      const second = sweep(c, r, r.tick);
+      if (second.some((s) => s.holed)) twoPaths++;
+    }
+    const ok = ones > 0 || twoPaths > 0;
+    if (!ok) impossible++;
+    console.log(
+      `${ok ? 'OK ' : 'NO '} Buca ${i + 1} (${def.name}): hole-in-one ${ones}/${first.length}, ` +
+        `posizioni da cui si chiude al 2° colpo: ${twoPaths}/${seen.size}`
+    );
+  });
+}
+if (impossible) console.log(`\n${impossible} buche non si chiudono in 2 colpi.`);
+process.exitCode = impossible ? 1 : 0;

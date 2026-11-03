@@ -13,13 +13,14 @@
   // ---------- salvataggio ----------
   const save = loadSave();
   function loadSave() {
-    const base = { wins: 0, totalWins: 0, owned: ['gino'], selected: 'gino' };
+    const base = { wins: 0, totalWins: 0, owned: ['gino'], selected: 'gino', completed: {} };
     try {
       const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
       if (data && typeof data === 'object') {
         const merged = Object.assign(base, data);
         if (!Array.isArray(merged.owned)) merged.owned = ['gino'];
         if (!merged.owned.includes('gino')) merged.owned.push('gino');
+        if (!merged.completed || typeof merged.completed !== 'object') merged.completed = {};
         if (!merged.owned.includes(merged.selected)) merged.selected = 'gino';
         return merged;
       }
@@ -35,7 +36,7 @@
   const $ = (id) => document.getElementById(id);
   const canvas = $('game');
   const ctx = canvas.getContext('2d');
-  const screens = ['menu', 'shop', 'help', 'pause', 'result'];
+  const screens = ['menu', 'courses', 'shop', 'help', 'pause', 'result'];
   const hud = $('hud');
   const toastEl = $('toast');
   const hintEl = $('controls-hint');
@@ -43,6 +44,7 @@
   // ---------- stato ----------
   const S = {
     screen: 'menu',
+    courseIdx: 0,
     holeIndex: 0,
     course: null,
     ball: { x: 0, y: 0, vx: 0, vy: 0 },
@@ -89,6 +91,8 @@
     hole: () => { beep(660, 0.12, 'sine', 0.2); setTimeout(() => beep(990, 0.2, 'sine', 0.2), 110); },
     ace: () => [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, 0.18, 'triangle', 0.18), i * 90)),
     fail: () => beep(300, 0.5, 'sawtooth', 0.08, 90),
+    splash: () => beep(500, 0.3, 'sine', 0.12, 120),
+    portal: () => beep(300, 0.25, 'sine', 0.12, 1200),
     win: () => [392, 523, 659, 784, 1046, 1318].forEach((f, i) => setTimeout(() => beep(f, 0.2, 'triangle', 0.16), i * 110)),
   };
 
@@ -127,6 +131,7 @@
     hintEl.classList.toggle('hidden', !playing);
     if (name === 'menu') refreshMenu();
     if (name === 'shop') buildShop();
+    if (name === 'courses') buildCourses();
     if (name) {
       const first = $('screen-' + name).querySelector('button:not(:disabled)');
       if (first) setTimeout(() => first.focus({ preventScroll: true }), 30);
@@ -232,7 +237,9 @@
     const b = e.target.closest('button[data-action]');
     if (!b) return;
     const a = b.dataset.action;
-    if (a === 'play' || a === 'restart') startRound();
+    if (a === 'play') show('courses');
+    else if (a === 'restart') startRound(S.courseIdx);
+    else if (a === 'course') startRound(Number(b.dataset.course));
     else if (a === 'shop') show('shop');
     else if (a === 'help') show('help');
     else if (a === 'menu') show('menu');
@@ -241,7 +248,30 @@
   $('btn-pause').addEventListener('click', () => { if (S.screen === null) show('pause'); });
 
   // ---------- giro e buche ----------
-  function startRound() {
+  const lastHole = () => P.COURSES[S.courseIdx].holes.length - 1;
+  const theme = () => P.COURSES[S.courseIdx].theme;
+
+  function buildCourses() {
+    const list = $('course-list');
+    list.innerHTML = '';
+    P.COURSES.forEach((c, i) => {
+      const b = document.createElement('button');
+      b.className = 'course-card';
+      b.dataset.action = 'course';
+      b.dataset.course = String(i);
+      b.style.setProperty('--c-green', c.theme.green);
+      b.style.setProperty('--c-border', c.theme.border);
+      const done = save.completed[c.id] || 0;
+      b.innerHTML = `<span class="course-swatch"></span><span class="course-text"><span class="course-name"></span>` +
+        `<span class="course-desc"></span><span class="course-done"></span></span>`;
+      b.querySelector('.course-name').textContent = c.name;
+      b.querySelector('.course-desc').textContent = c.desc;
+      b.querySelector('.course-done').textContent = done ? `✓ Completato ${done} ${done === 1 ? 'volta' : 'volte'}` : 'Mai completato';
+      list.appendChild(b);
+    });
+  }
+  function startRound(courseIdx) {
+    S.courseIdx = courseIdx || 0;
     S.bonusNext = false;
     loadHole(0);
     show(null);
@@ -249,7 +279,7 @@
 
   function loadHole(i) {
     S.holeIndex = i;
-    S.course = P.buildCourse(P.HOLES[i]);
+    S.course = P.buildCourse(P.COURSES[S.courseIdx].holes[i]);
     S.ball = { x: S.course.ball.x, y: S.course.ball.y, vx: 0, vy: 0 };
     S.shotFrom = { x: S.ball.x, y: S.ball.y };
     S.strokes = 0;
@@ -295,7 +325,7 @@
     const ace = S.strokes === 1;
     if (ace) {
       sfx.ace();
-      if (S.holeIndex < 8) {
+      if (S.holeIndex < lastHole()) {
         S.bonusNext = true;
         toast('HOLE IN ONE! ⭐<small>Alla prossima buca hai 3 colpi</small>', 1800);
       } else {
@@ -311,7 +341,9 @@
   }
 
   function afterSink() {
-    if (S.holeIndex === 8) {
+    if (S.holeIndex === lastHole()) {
+      const cdef = P.COURSES[S.courseIdx];
+      save.completed[cdef.id] = (save.completed[cdef.id] || 0) + 1;
       save.wins++;
       save.totalWins++;
       persist();
@@ -325,11 +357,23 @@
           : `<br>Ancora ${next.cost - save.wins} per sbloccare <b>${next.name}</b>.`;
       }
       showResult('Giro completato! 🏆',
-        `Hai chiuso tutte e 9 le buche. <b>+1 vittoria</b>.<br>Vittorie da spendere: <b>${save.wins}</b>${tip}`,
-        [['Gioca ancora', 'play', true], ['Negozio', 'shop'], ['Menu', 'menu']]);
+        `Hai chiuso tutte e 9 le buche del percorso <b>${cdef.name}</b>. <b>+1 vittoria</b>.<br>Vittorie da spendere: <b>${save.wins}</b>${tip}`,
+        [['Rigioca questo percorso', 'restart', true], ['Altri percorsi', 'play'], ['Negozio', 'shop'], ['Menu', 'menu']]);
     } else {
       loadHole(S.holeIndex + 1);
     }
+  }
+
+  function onHazard(kind) {
+    const lava = kind === 'lava';
+    burst(S.ball.x, S.ball.y, lava ? '#ff8a1f' : '#7fd4ff', 24);
+    sfx.splash();
+    toast(lava ? 'Bruciata nella lava! 🔥<small>Colpo perso, si torna indietro</small>' : 'Splash! In acqua 💦<small>Colpo perso, si torna indietro</small>', 1300);
+    S.ball.x = S.shotFrom.x;
+    S.ball.y = S.shotFrom.y;
+    S.ball.vx = 0;
+    S.ball.vy = 0;
+    onStopped();
   }
 
   function onStopped() {
@@ -340,7 +384,7 @@
       setTimeout(() => {
         showResult('Troppi colpi!',
           `Alla buca ${n} hai finito i ${S.maxStrokes} colpi.<br>Si ricomincia il percorso dalla <b>buca 1</b>.`,
-          [['Ricomincia', 'restart', true], ['Menu', 'menu']]);
+          [['Ricomincia', 'restart', true], ['Altri percorsi', 'play'], ['Menu', 'menu']]);
       }, 500);
     } else {
       S.phase = 'aim';
@@ -401,7 +445,13 @@
       trail();
       if (ev.hit === 'wall' && Math.hypot(S.ball.vx, S.ball.vy) > 1.5) sfx.wall();
       if (ev.hit === 'bumper') sfx.bumper();
+      if (ev.portal) {
+        burst(ev.portal.from.x, ev.portal.from.y, '#c08bff', 14);
+        burst(ev.portal.to.x, ev.portal.to.y, '#7fd4ff', 14);
+        sfx.portal();
+      }
       if (ev.holed) onHoled();
+      else if (ev.hazard) onHazard(ev.hazard);
       else if (ev.stopped) onStopped();
     } else if (S.phase === 'sinking') {
       S.sink = Math.min(1, S.sink + 0.08);
@@ -424,10 +474,22 @@
 
   function drawBackground() {
     ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
-    ctx.fillStyle = '#14361f';
+    const th = theme();
+    ctx.fillStyle = th.bg;
     ctx.fillRect(0, 0, view.cw, view.ch);
-    // ciuffi d'erba decorativi
-    ctx.fillStyle = '#18402a';
+    if (th.stars) {
+      for (let i = 0; i < 120; i++) {
+        const x = (i * 137.5) % view.cw;
+        const y = (i * 89.3 + i * i * 0.7) % view.ch;
+        ctx.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(S.tick * 0.02 + i));
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x, y, i % 7 === 0 ? 2 : 1, i % 7 === 0 ? 2 : 1);
+      }
+      ctx.globalAlpha = 1;
+      return;
+    }
+    // macchie decorative
+    ctx.fillStyle = th.bgSpot;
     for (let i = 0; i < 40; i++) {
       const x = (i * 97) % view.cw;
       const y = (i * 151) % view.ch;
@@ -437,35 +499,22 @@
 
   function drawCourse(c, t) {
     // green con strisce di taglio
-    ctx.fillStyle = '#3fa34d';
+    const th = theme();
+    ctx.fillStyle = th.green;
     ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#47ad55';
+    ctx.fillStyle = th.stripe;
     for (let y = 0; y < H; y += 64) ctx.fillRect(0, y, W, Math.min(32, H - y));
 
-    // pendenze con frecce animate
-    for (const s of c.slopes) {
-      ctx.fillStyle = 'rgba(20, 70, 30, 0.25)';
-      ctx.fillRect(s.x, s.y, s.w, s.h);
-      const ang = Math.atan2(s.ay, s.ax);
-      const off = (t * 0.6) % 30;
-      ctx.save();
-      ctx.beginPath(); ctx.rect(s.x, s.y, s.w, s.h); ctx.clip();
-      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-      ctx.lineWidth = 3;
-      ctx.lineCap = 'round';
-      for (let x = s.x - 30; x < s.x + s.w + 30; x += 30) {
-        for (let y = s.y - 30; y < s.y + s.h + 30; y += 30) {
-          const px = x + Math.cos(ang) * off;
-          const py = y + Math.sin(ang) * off;
-          ctx.save();
-          ctx.translate(px, py);
-          ctx.rotate(ang);
-          ctx.beginPath(); ctx.moveTo(-5, -6); ctx.lineTo(3, 0); ctx.lineTo(-5, 6); ctx.stroke();
-          ctx.restore();
-        }
-      }
-      ctx.restore();
-    }
+    // ghiaccio
+    for (const s of c.ice) drawIce(s, t);
+    // pendenze e rampe con frecce animate
+    for (const s of c.slopes) drawArrows(s, t, 'rgba(20, 70, 30, 0.25)', 'rgba(255,255,255,0.35)', 0.6);
+    for (const s of c.boosts) drawArrows(s, t, 'rgba(255, 140, 30, 0.35)', 'rgba(255,230,120,0.9)', 2.2);
+    // acqua e lava
+    for (const s of c.water) drawLiquid(s, t, '#2f86d6', '#5fb0f0');
+    for (const s of c.lava) drawLiquid(s, t, '#d9480f', '#ffa22e');
+    // portali
+    for (const p of c.portals) { drawPortal(p.a, t, '#c08bff', true); drawPortal(p.b, t, '#7fd4ff', false); }
 
     // sabbia
     for (const s of c.sand) {
@@ -493,9 +542,9 @@
     // muri
     for (const w of c.walls) drawWall(w);
     // bordo di legno
-    ctx.fillStyle = '#7a4b26';
+    ctx.fillStyle = th.border;
     for (const b of c.border) ctx.fillRect(b.x, b.y, b.w, b.h);
-    ctx.strokeStyle = '#a8743f';
+    ctx.strokeStyle = th.borderHi;
     ctx.lineWidth = 3;
     ctx.strokeRect(P.BORDER - 1.5, P.BORDER - 1.5, W - P.BORDER * 2 + 3, H - P.BORDER * 2 + 3);
     ctx.strokeStyle = 'rgba(0,0,0,0.25)';
@@ -519,6 +568,9 @@
       ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.22, 0, Math.PI * 2); ctx.fill();
     }
 
+    // eliche rotanti
+    for (const sp of c.spinners) drawSpinner(sp, S.tick);
+
     // blocchi mobili
     for (const m of c.movers) {
       const r = P.moverRect(m, S.tick);
@@ -536,6 +588,106 @@
       }
       ctx.restore();
     }
+  }
+
+  function drawArrows(s, t, fill, stroke, speed) {
+    ctx.fillStyle = fill;
+    ctx.fillRect(s.x, s.y, s.w, s.h);
+    const ang = Math.atan2(s.ay, s.ax);
+    const off = (t * speed) % 30;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(s.x, s.y, s.w, s.h); ctx.clip();
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    for (let x = s.x - 30; x < s.x + s.w + 30; x += 30) {
+      for (let y = s.y - 30; y < s.y + s.h + 30; y += 30) {
+        ctx.save();
+        ctx.translate(x + Math.cos(ang) * off, y + Math.sin(ang) * off);
+        ctx.rotate(ang);
+        ctx.beginPath(); ctx.moveTo(-5, -6); ctx.lineTo(3, 0); ctx.lineTo(-5, 6); ctx.stroke();
+        ctx.restore();
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawIce(s, t) {
+    ctx.fillStyle = 'rgba(225, 245, 255, 0.85)';
+    rr(s.x, s.y, s.w, s.h, 10); ctx.fill();
+    ctx.save();
+    rr(s.x, s.y, s.w, s.h, 10); ctx.clip();
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    ctx.lineWidth = 2;
+    for (let k = -s.h; k < s.w; k += 46) {
+      ctx.beginPath(); ctx.moveTo(s.x + k, s.y + s.h); ctx.lineTo(s.x + k + s.h * 0.6, s.y); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(140, 190, 220, 0.5)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < (s.w * s.h) / 9000; i++) {
+      const x = s.x + ((i * 71) % Math.max(1, s.w));
+      const y = s.y + ((i * 113) % Math.max(1, s.h));
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 10, y + 6); ctx.lineTo(x + 16, y + 2); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawLiquid(s, t, base, light) {
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    rr(s.x - 2, s.y - 2, s.w + 4, s.h + 4, 12); ctx.fill();
+    ctx.fillStyle = base;
+    rr(s.x, s.y, s.w, s.h, 10); ctx.fill();
+    ctx.save();
+    rr(s.x, s.y, s.w, s.h, 10); ctx.clip();
+    ctx.strokeStyle = light;
+    ctx.lineWidth = 2;
+    for (let y = s.y + 10; y < s.y + s.h; y += 16) {
+      ctx.beginPath();
+      for (let x = s.x; x <= s.x + s.w; x += 6) {
+        const yy = y + Math.sin((x + t * 1.2 + y) * 0.08) * 2.5;
+        if (x === s.x) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawPortal(p, t, color, entrance) {
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.fillStyle = 'rgba(10, 5, 30, 0.75)';
+    ctx.beginPath(); ctx.arc(0, 0, P.PORTAL_R + 2, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    for (let i = 0; i < 3; i++) {
+      ctx.save();
+      ctx.rotate((entrance ? 1 : -1) * t * 0.06 + (i * Math.PI * 2) / 3);
+      ctx.beginPath(); ctx.arc(0, 0, P.PORTAL_R - i * 3.5, 0, Math.PI * 1.2); ctx.stroke();
+      ctx.restore();
+    }
+    ctx.fillStyle = color;
+    ctx.font = 'bold 9px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(entrance ? 'IN' : 'OUT', 0, P.PORTAL_R + 10);
+    ctx.restore();
+  }
+
+  function drawSpinner(sp, tick) {
+    const e = P.spinnerEnds(sp, tick);
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+    ctx.lineWidth = sp.width;
+    ctx.beginPath(); ctx.moveTo(e.x1 + 3, e.y1 + 4); ctx.lineTo(e.x2 + 3, e.y2 + 4); ctx.stroke();
+    ctx.strokeStyle = '#e5484d';
+    ctx.beginPath(); ctx.moveTo(e.x1, e.y1); ctx.lineTo(e.x2, e.y2); ctx.stroke();
+    ctx.strokeStyle = '#f4f1e6';
+    ctx.lineWidth = sp.width * 0.35;
+    ctx.beginPath(); ctx.moveTo(e.x1, e.y1); ctx.lineTo(e.x2, e.y2); ctx.stroke();
+    ctx.fillStyle = '#4b5563';
+    ctx.beginPath(); ctx.arc(sp.x, sp.y, sp.width * 0.9, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#f5c542';
+    ctx.beginPath(); ctx.arc(sp.x, sp.y, sp.width * 0.35, 0, Math.PI * 2); ctx.fill();
   }
 
   function drawWall(w) {
@@ -695,7 +847,7 @@
     if (S.screen !== null) {
       if (k === 'Escape') {
         if (S.screen === 'pause') show(null);
-        else if (S.screen === 'shop' || S.screen === 'help') show('menu');
+        else if (S.screen === 'shop' || S.screen === 'help' || S.screen === 'courses') show('menu');
         e.preventDefault();
         return;
       }
@@ -779,5 +931,5 @@
   show('menu');
 
   // Accesso per i test automatici.
-  window.__putt = { S, save, shoot, loadHole, startRound, show };
+  window.__putt = { S, save, shoot, loadHole, startRound, show, P };
 })();

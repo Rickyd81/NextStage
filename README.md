@@ -32,11 +32,20 @@ Un videogioco 2D di minigolf (solo putt) che si gioca nel browser, da computer c
 
 Ogni personaggio speciale lascia una scia diversa dietro la pallina. Vittorie e personaggi vengono salvati nel browser (localStorage) del dispositivo.
 
-## Le 9 buche
+## I percorsi
 
-1. Il rettilineo · 2. Il muretto · 3. La sabbiera · 4. La curva · 5. La discesa · 6. Lo zig-zag · 7. I funghi · 8. Il pendolo · 9. Il gran finale
+Ci sono 6 percorsi da 9 buche: si sceglie quale giocare dopo aver premuto *Gioca*. Ogni percorso completato vale 1 vittoria.
 
-Sabbia (rallenta molto), pendenze (frecce), funghi che rimbalzano e blocchi che si muovono.
+| Percorso | Ostacoli |
+|---|---|
+| Il Prato | muretti, sabbia, pendenze, funghi, blocchi mobili |
+| La Spiaggia | lagune, dune, un molo stretto, onde che si muovono |
+| Il Ghiacciaio | lastre di ghiaccio che fanno scivolare, eliche rotanti, crepacci |
+| Il Vulcano | fiumi di lava, rampe acceleratrici, pistoni |
+| Lo Spazio | portali IN → OUT, asteroidi, satelliti in orbita, gravità che spinge di lato |
+| La Giungla | fiumi, radici, un tempio, la palude e la cascata che spinge indietro |
+
+**Acqua e lava**: se la pallina ci finisce dentro torna dove l'hai colpita e il colpo è perso.
 
 ## Come avviarlo
 
@@ -47,7 +56,7 @@ Per giocarci dal telefono la cosa più comoda è **GitHub Pages**: nel repo vai 
 ## Struttura
 
 - `index.html`, `style.css`: pagina e schermate (menu, negozio, regole, pausa, risultato)
-- `js/physics.js`: fisica della pallina e disegno delle 9 buche
+- `js/physics.js`: fisica della pallina e disegno dei 6 percorsi
 - `js/characters.js`: personaggi (prezzi, descrizioni, disegno)
 - `js/game.js`: logica di gioco, comandi, negozio e salvataggi
-- `tools/verifica-buche.js`: controlla con Node che ogni buca si possa chiudere in 2 colpi (`node tools/verifica-buche.js`)
+- `tools/verifica-buche.js`: controlla con Node che ogni buca si possa chiudere in 2 colpi (`node tools/verifica-buche.js` oppure `node tools/verifica-buche.js spiaggia` per un solo percorso)
