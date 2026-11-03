@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#14361f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Putt Matto</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <canvas id="game" aria-label="Campo da minigolf"></canvas>
+
+    <div id="hud" class="hidden">
+      <div class="hud-item"><span class="hud-label">Buca</span><span id="hud-hole">1/9</span></div>
+      <div class="hud-item"><span class="hud-label">Colpi</span><span id="hud-strokes">0/2</span></div>
+      <div id="hud-bonus" class="hud-bonus hidden">⭐ Bonus: 3 colpi</div>
+      <button id="btn-pause" class="hud-btn" aria-label="Pausa">❚❚</button>
+    </div>
+
+    <div id="toast" aria-live="polite"></div>
+    <div id="controls-hint" class="hidden"></div>
+
+    <!-- MENU PRINCIPALE -->
+    <section id="screen-menu" class="screen">
+      <div class="panel">
+        <h1 class="logo">Putt <span>Matto</span></h1>
+        <p class="tagline">9 buche · massimo 2 colpi a buca · sbagli e si ricomincia!</p>
+        <canvas id="menu-preview" width="180" height="200"></canvas>
+        <p class="menu-char"><span id="menu-char-name">Gino</span></p>
+        <p class="wins">🏆 Vittorie: <strong id="menu-wins">0</strong></p>
+        <div class="buttons">
+          <button data-action="play" class="primary">Gioca</button>
+          <button data-action="shop">Negozio</button>
+          <button data-action="help">Come si gioca</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- NEGOZIO -->
+    <section id="screen-shop" class="screen hidden">
+      <div class="panel wide">
+        <h2>Negozio</h2>
+        <p class="wins">🏆 Vittorie da spendere: <strong id="shop-wins">0</strong></p>
+        <div id="shop-grid" class="shop-grid"></div>
+        <div class="buttons">
+          <button data-action="menu">Indietro</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- REGOLE -->
+    <section id="screen-help" class="screen hidden">
+      <div class="panel">
+        <h2>Come si gioca</h2>
+        <ul class="rules">
+          <li>Un giro è di <b>9 buche</b>.</li>
+          <li>Ogni buca va chiusa in <b>massimo 2 colpi</b>. Se non ce la fai, <b>ricominci dalla buca 1</b>.</li>
+          <li><b>Hole in one</b>: se la imbuchi al primo colpo, alla buca dopo hai <b>3 colpi</b>.</li>
+          <li>Ogni giro completato vale <b>1 vittoria</b>. Con le vittorie compri nuovi personaggi nel Negozio.</li>
+        </ul>
+        <h3>Telefono (touch)</h3>
+        <p>Appoggia il dito sul campo e <b>trascina all'indietro</b>, come una fionda. Più tiri, più forte. Lascia per colpire.</p>
+        <h3>Tastiera</h3>
+        <p><kbd>←</kbd> <kbd>→</kbd> mira (con <kbd>Shift</kbd> più preciso) · tieni premuto <kbd>Spazio</kbd> per caricare, rilascia per colpire · <kbd>Esc</kbd> pausa</p>
+        <div class="buttons">
+          <button data-action="menu" class="primary">Ho capito</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAUSA -->
+    <section id="screen-pause" class="screen hidden">
+      <div class="panel">
+        <h2>Pausa</h2>
+        <div class="buttons">
+          <button data-action="resume" class="primary">Riprendi</button>
+          <button data-action="restart">Ricomincia il giro</button>
+          <button data-action="menu">Esci al menu</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- RISULTATO (vittoria o sconfitta) -->
+    <section id="screen-result" class="screen hidden">
+      <div class="panel">
+        <h2 id="result-title"></h2>
+        <p id="result-text"></p>
+        <div class="buttons" id="result-buttons"></div>
+      </div>
+    </section>
+  </div>
+
+  <script src="js/physics.js"></script>
+  <script src="js/characters.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
