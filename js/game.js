@@ -285,7 +285,7 @@
     S.strokes = 0;
     S.maxStrokes = S.bonusNext ? 3 : 2;
     S.bonusNext = false;
-    S.aim = Math.atan2(S.course.hole.y - S.ball.y, S.course.hole.x - S.ball.x);
+    S.aim = randomAim();
     S.power = 0;
     S.charging = false;
     S.drag = null;
@@ -295,6 +295,14 @@
     updateHud();
     const extra = S.maxStrokes === 3 ? '<small>⭐ Bonus hole in one: hai 3 colpi!</small>' : '';
     toast(`Buca ${i + 1}: ${S.course.name}${extra}`, 1600);
+  }
+
+  // La freccia parte in una direzione a caso, mai già puntata verso la buca:
+  // la mira la deve trovare il giocatore.
+  function randomAim() {
+    const toHole = Math.atan2(S.course.hole.y - S.ball.y, S.course.hole.x - S.ball.x);
+    const off = (Math.PI / 4) + Math.random() * (Math.PI * 1.5); // tra 45° e 315° di scarto
+    return toHole + off;
   }
 
   function updateHud() {
@@ -388,7 +396,7 @@
       }, 500);
     } else {
       S.phase = 'aim';
-      S.aim = Math.atan2(S.course.hole.y - S.ball.y, S.course.hole.x - S.ball.x);
+      S.aim = randomAim();
     }
   }
 
