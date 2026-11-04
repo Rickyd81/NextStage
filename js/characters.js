@@ -1,4 +1,4 @@
-// Personaggi di Putt Matto: dati del negozio e disegno su canvas.
+// Personaggi di Next Stage: dati del negozio e disegno su canvas.
 // Ogni personaggio è disegnato con i "piedi" nell'origine, alto circa 66 unità.
 (function (root) {
   'use strict';

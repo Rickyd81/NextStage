@@ -1,4 +1,4 @@
-// Putt Matto: logica di gioco, disegno, comandi (tastiera e touch), negozio e salvataggi.
+// Next Stage: logica di gioco, disegno, comandi (tastiera e touch), negozio e salvataggi.
 (function () {
   'use strict';
 
@@ -7,7 +7,7 @@
   const { W, H, BALL_R, HOLE_R, MAX_V } = P;
 
   const MAX_DRAG = 170;        // trascinamento (in unità di campo) per la potenza massima
-  const STORAGE_KEY = 'puttmatto.v1';
+  const STORAGE_KEY = 'puttmatto.v1'; // nome storico: lo teniamo per non perdere le vittorie già salvate
   const TICK_MS = 1000 / 60;
 
   // ---------- salvataggio ----------

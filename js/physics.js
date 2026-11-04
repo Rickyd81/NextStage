@@ -1,4 +1,4 @@
-// Fisica e percorsi di Putt Matto.
+// Fisica e percorsi di Next Stage.
 // Funziona sia nel browser (window.PuttPhysics) sia in Node (per lo script di verifica delle buche).
 (function (root) {
   'use strict';
