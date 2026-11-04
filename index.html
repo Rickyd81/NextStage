@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#14361f">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>Putt Matto</title>
+  <title>Next Stage</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -25,7 +25,7 @@
     <!-- MENU PRINCIPALE -->
     <section id="screen-menu" class="screen">
       <div class="panel">
-        <h1 class="logo">Putt <span>Matto</span></h1>
+        <h1 class="logo">Next <span>Stage</span></h1>
         <p class="tagline">9 buche · massimo 2 colpi a buca · sbagli e si ricomincia!</p>
         <canvas id="menu-preview" width="180" height="200"></canvas>
         <p class="menu-char"><span id="menu-char-name">Gino</span></p>
@@ -34,6 +34,18 @@
           <button data-action="play" class="primary">Gioca</button>
           <button data-action="shop">Negozio</button>
           <button data-action="help">Come si gioca</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCELTA DEL PERCORSO -->
+    <section id="screen-courses" class="screen hidden">
+      <div class="panel wide">
+        <h2>Scegli il percorso</h2>
+        <p class="tagline">Ogni percorso ha 9 buche e vale 1 vittoria quando lo completi.</p>
+        <div id="course-list" class="course-list"></div>
+        <div class="buttons">
+          <button data-action="menu">Indietro</button>
         </div>
       </div>
     </section>
@@ -59,6 +71,7 @@
           <li>Ogni buca va chiusa in <b>massimo 2 colpi</b>. Se non ce la fai, <b>ricominci dalla buca 1</b>.</li>
           <li><b>Hole in one</b>: se la imbuchi al primo colpo, alla buca dopo hai <b>3 colpi</b>.</li>
           <li>Ogni giro completato vale <b>1 vittoria</b>. Con le vittorie compri nuovi personaggi nel Negozio.</li>
+          <li>Ci sono <b>6 percorsi</b> a tema. Occhio all'<b>acqua</b> e alla <b>lava</b>: la pallina torna dove l'hai colpita e il colpo è perso. I <b>portali IN</b> ti teletrasportano al portale <b>OUT</b>.</li>
         </ul>
         <h3>Telefono (touch)</h3>
         <p>Appoggia il dito sul campo e <b>trascina all'indietro</b>, come una fionda. Più tiri, più forte. Lascia per colpire.</p>

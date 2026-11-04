@@ -195,6 +195,39 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* PERCORSI */
+.course-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.course-card {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  text-align: left;
+  background: #163a21;
+  color: #f4f1e6;
+  border: 2px solid #2f6b3f;
+  border-radius: 14px;
+  padding: 10px;
+  cursor: pointer;
+}
+.course-card:hover { border-color: #f5c542; }
+.course-card:focus-visible { outline: 3px solid #7fd4ff; outline-offset: 2px; }
+.course-swatch {
+  flex: 0 0 44px;
+  border-radius: 8px;
+  background: repeating-linear-gradient(0deg, var(--c-green) 0 8px, color-mix(in srgb, var(--c-green) 85%, #fff) 8px 16px);
+  border: 4px solid var(--c-border);
+  min-height: 64px;
+}
+.course-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.course-name { font-weight: 900; font-size: 18px; }
+.course-desc { font-size: 13px; opacity: 0.85; line-height: 1.35; }
+.course-done { font-size: 12.5px; font-weight: 700; color: #f5c542; }
+
 /* NEGOZIO */
 .shop-grid {
   display: grid;
